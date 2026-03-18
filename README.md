@@ -28,7 +28,7 @@ Phase 1: extract_mdbs.py Recursively scans a target directory for .mdb files and
   Utilizes a hardcoded FME macro string (RUNTIME_MACROS and META_MACROS) to suppress schema and projection errors.
   Skips processing if a .gdb of the same name already exists.
 
-Phase 2: update_mxds.pyRecursively scans for .mxd files and imports them into a single, pre-created ArcGIS Pro Master Project (.aprx).
+Phase 2: update_mxds.py Recursively scans for .mxd files and imports them into a single, pre-created ArcGIS Pro Master Project (.aprx).
   Map & Layout Renaming: Automatically prefixes imported Maps and Layouts with the original .mxd filename to prevent naming collisions and maintain organization.
   Dynamic Repointing: Identifies layers pointing to legacy .mdb files and dynamically repoints them to the newly generated .gdb files from Phase 1.
   FME Suffix Handling: Automatically detects and handles geometry suffixes appended by FME during Phase 1 (e.g., mapping a legacy Roads
