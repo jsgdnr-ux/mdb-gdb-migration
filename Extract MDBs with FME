@@ -1,0 +1,59 @@
+import arcpy
+import os
+
+# Set the root directory you want to scan
+ROOT_DIR = r"E:\yo file location"
+
+def extract_mdbs_fme():
+    """
+    Phase 1: Walks through the directory and uses the Data Interoperability 
+    extension to brute-force legacy .mdb files into .gdb files.
+    """
+    print("Starting MDB to GDB Extraction via FME...")
+    
+    # Check out the Data Interoperability extension
+    if arcpy.CheckExtension("DataInteroperability") == "Available":
+        arcpy.CheckOutExtension("DataInteroperability")
+    else:
+        print("EEK! Data Interop extension not available or licensed.")
+        return
+
+    for dirpath, dirnames, filenames in os.walk(ROOT_DIR):
+        for filename in filenames:
+            if filename.lower().endswith('.mdb'):
+                mdb_path = os.path.join(dirpath, filename)
+                gdb_name = filename[:-4] + ".gdb"
+                gdb_path = os.path.join(dirpath, gdb_name)
+                
+                # Skip if GDB already exists
+                if not arcpy.Exists(gdb_path):
+                    print(f"Converting MDB: {filename}")
+                    try:
+                        # The UI-hacked FME macro string to merge schemas and ignore coordinate panic
+                        fme_params = (
+                            f'PERSONAL_GEODATABASE,"{mdb_path}",'
+                            '"RUNTIME_MACROS,""WHERE_CLAUSE,,EXPOSE_ATTRS_GROUP,FME_DISCLOSURE_OPEN,'
+                            'USE_SEARCH_ENVELOPE,NO,CLIP_TO_ENVELOPE,NO,READ_BOOLEANS_AS_YES_NO,YES,'
+                            'READ_NULLS,YES,EXPOSE_PRIMARY_KEY_ATTRIBUTE,NO,QUERY_FEATURE_TYPES_FOR_MERGE_FILTERS,Yes,'
+                            'ADVANCED,FME_DISCLOSURE_OPEN,DONUT_DETECTION,ORIENTATION,_MERGE_SCHEMAS,YES"",'
+                            'META_MACROS,""SourceWHERE_CLAUSE,,SourceEXPOSE_ATTRS_GROUP,FME_DISCLOSURE_OPEN,'
+                            'SourceUSE_SEARCH_ENVELOPE,NO,SourceCLIP_TO_ENVELOPE,NO,SourceREAD_BOOLEANS_AS_YES_NO,YES,'
+                            'SourceREAD_NULLS,YES,SourceEXPOSE_PRIMARY_KEY_ATTRIBUTE,NO,'
+                            'SourceQUERY_FEATURE_TYPES_FOR_MERGE_FILTERS,Yes,SourceADVANCED,FME_DISCLOSURE_OPEN,'
+                            'SourceDONUT_DETECTION,ORIENTATION"",METAFILE,PERSONAL_GEODATABASE,COORDSYS,,'
+                            '__FME_DATASET_IS_SOURCE__,true"'
+                        )
+                        
+                        arcpy.QuickImport_interop(fme_params, gdb_path)
+                        print(f"  Success: Extracted to {gdb_name}")
+                    except Exception as e:
+                        print(f"  ERROR migrating {filename}: {str(e)}")
+                else:
+                    print(f"Skipping {gdb_name} (already exists).")
+
+    # Clean up the extension license
+    arcpy.CheckInExtension("DataInteroperability")
+    print("\nExtraction complete! Phase 1 is done.")
+
+if __name__ == '__main__':
+    extract_mdbs_fme()
